@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -16,6 +16,9 @@ fn main() {
 
     let (d3p1, d3p2) = run(&day3);
     println!("Day 3: p1 {} p2 {}", d3p1, d3p2);
+
+    let d4p1 = run(&day4);
+    println!("Day 4: p1 {} p2 {}", d4p1, NOT_IMPL);
 }
 
 fn run<F, T>(func: F) -> T
@@ -50,6 +53,38 @@ fn read_grid(day: i32) -> Result<Vec<Vec<char>>, Box<dyn Error>> {
     }
 
     return Ok(grid);
+}
+
+fn read_entries(
+    day: i32,
+    separator: String,
+) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+    let f = File::open(format!("./input/day{}.txt", day))?;
+    let lines = BufReader::new(f).lines();
+
+    let mut entries = vec![];
+
+    let mut cur_entry = HashMap::new();
+    for line in lines {
+        if let Ok(line) = line {
+            if line == separator {
+                entries.push(cur_entry);
+                cur_entry = HashMap::new();
+            } else {
+                let fields = line.split_ascii_whitespace();
+                for field in fields {
+                    let kv: Vec<&str> = field.split(':').collect();
+                    cur_entry.insert(String::from(kv[0].trim()), String::from(kv[1].trim()));
+                }
+            }
+        }
+    }
+
+    if cur_entry.len() > 0 {
+        entries.push(cur_entry);
+    }
+
+    return Ok(entries);
 }
 
 fn day1() -> Result<(i32, i32), Box<dyn Error>> {
@@ -188,4 +223,26 @@ fn check_slope(grid: &Vec<Vec<char>>, mx: usize, my: usize) -> u64 {
     }
 
     return tree_count;
+}
+
+fn day4() -> Result<i32, Box<dyn Error>> {
+    const REQUIRED_FIELDS: &[&str] = &["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
+
+    let mut valid_entries = 0;
+
+    let passport_entries = read_entries(4, "".to_string())?;
+    for entry in passport_entries {
+        let mut is_valid = true;
+        for field in REQUIRED_FIELDS {
+            if !entry.contains_key(*field) {
+                is_valid = false;
+                break;
+            }
+        }
+        if is_valid {
+            valid_entries += 1;
+        }
+    }
+
+    return Ok(valid_entries);
 }

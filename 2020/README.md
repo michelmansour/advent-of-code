@@ -15,3 +15,6 @@ The Year of Rust
 ## Day 3
 * Part 1: Learned about *constants* and 2D vectors.
 * Part 2: Learned about other integer types, specifically unsigned 64-bit.
+
+## Day 4
+* Part 1: Learned about `std::collections::HashMap` and string arrays.
