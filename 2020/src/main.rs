@@ -1,18 +1,22 @@
-use std::process;
-use std::error::Error;
 use std::collections::HashSet;
+use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::process;
 
 fn main() {
     println!("Hello, world!");
     let (d1p1, d1p2) = run(&day1);
     println!("Day 1: p1 {} p2 {}", d1p1, d1p2);
-    println!("Day 2: {}", run(&day2));
+
+    let (d2p1, d2p2) = run(&day2);
+    println!("Day 2: p1 {} p2 {}", d2p1, d2p2);
 }
 
-fn run<F, T>(func: F) -> T where
-    F: FnOnce() -> Result<T, Box<dyn Error>> {
+fn run<F, T>(func: F) -> T
+where
+    F: FnOnce() -> Result<T, Box<dyn Error>>,
+{
     return func().unwrap_or_else(|err| {
         eprintln!("Something bad happened: {}", err);
         process::exit(1);
@@ -70,20 +74,26 @@ fn three_sum(nums: &Vec<i32>, target: i32) -> (i32, i32, i32) {
     return (-1, -1, -1);
 }
 
-fn day2() -> Result<usize, Box<dyn Error>> {
-    let num_matched = read_lines(2)?
-        .iter()
-        .map(|line| {
-            let v: Vec<&str> = line.split(':').collect();
-            return (v[0].trim(), v[1].trim());
-        })
-        .filter(|(policy, password)| check_password_against_policy(policy, password))
-        .count();
+fn day2() -> Result<(i32, i32), Box<dyn Error>> {
+    let mut sled = 0;
+    let mut toboggan = 0;
 
-    return Ok(num_matched);
+    for line in read_lines(2)? {
+        let v: Vec<&str> = line.split(':').collect();
+        let (policy, password) = (v[0].trim(), v[1].trim());
+
+        if check_password_against_sled_policy(policy, password) {
+            sled += 1;
+        }
+        if check_password_against_toboggan_policy(policy, password) {
+            toboggan += 1;
+        }
+    }
+
+    return Ok((sled, toboggan));
 }
 
-fn check_password_against_policy(policy: &str, password: &str) -> bool {
+fn check_password_against_sled_policy(policy: &str, password: &str) -> bool {
     let w: Vec<_> = policy.split_ascii_whitespace().collect();
     let (range_str, character_str) = (w[0].trim(), w[1].trim());
     let range: Vec<_> = range_str.split('-').collect();
@@ -101,4 +111,24 @@ fn count_char_in_str(c: char, s: &str) -> i32 {
         }
     }
     return count;
+}
+
+fn check_password_against_toboggan_policy(policy: &str, password: &str) -> bool {
+    let w: Vec<_> = policy.split_ascii_whitespace().collect();
+    let (pos_str, character_str) = (w[0].trim(), w[1].trim());
+    let posv: Vec<_> = pos_str.split('-').collect();
+    let (pos1, pos2) = (posv[0].parse::<usize>(), posv[1].parse::<usize>());
+
+    return xor_char_at_pos(
+        character_str.chars().next().unwrap(),
+        pos1.unwrap(),
+        pos2.unwrap(),
+        password,
+    );
+}
+
+fn xor_char_at_pos(c: char, pos1: usize, pos2: usize, s: &str) -> bool {
+    let (p1, p2) = (pos1 - 1, pos2 - 1);
+    let cv: Vec<char> = s.chars().collect();
+    return (cv[p1] == c && cv[p2] != c) || (cv[p1] != c && cv[p2] == c);
 }
