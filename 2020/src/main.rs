@@ -14,8 +14,8 @@ fn main() {
     let (d2p1, d2p2) = run(&day2);
     println!("Day 2: p1 {} p2 {}", d2p1, d2p2);
 
-    let d3p1 = run(&day3);
-    println!("Day 3: p1 {} p2 {}", d3p1, NOT_IMPL);
+    let (d3p1, d3p2) = run(&day3);
+    println!("Day 3: p1 {} p2 {}", d3p1, d3p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -149,12 +149,23 @@ fn xor_char_at_pos(c: char, pos1: usize, pos2: usize, s: &str) -> bool {
     return (cv[p1] == c && cv[p2] != c) || (cv[p1] != c && cv[p2] == c);
 }
 
-fn day3() -> Result<i32, Box<dyn Error>> {
-    const TREE: char = '#';
-    const MX: usize = 3;
-    const MY: usize = 1;
-
+fn day3() -> Result<(u64, u64), Box<dyn Error>> {
     let grid = read_grid(3)?;
+
+    let part1 = check_slope(&grid, 3, 1);
+
+    let mut total_trees_product = 1u64;
+    let slopes = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+    for (x, y) in slopes.iter() {
+        total_trees_product *= check_slope(&grid, *x, *y);
+    }
+
+    return Ok((part1, total_trees_product));
+}
+
+fn check_slope(grid: &Vec<Vec<char>>, mx: usize, my: usize) -> u64 {
+    const TREE: char = '#';
+
     let bottom = grid.len();
     let right = grid[0].len();
 
@@ -163,9 +174,9 @@ fn day3() -> Result<i32, Box<dyn Error>> {
 
     let mut tree_count = 0;
 
-    while cur_y + MY < bottom {
-        cur_x += MX;
-        cur_y += MY;
+    while cur_y + my < bottom {
+        cur_x += mx;
+        cur_y += my;
 
         if cur_x >= right {
             cur_x -= right;
@@ -176,5 +187,5 @@ fn day3() -> Result<i32, Box<dyn Error>> {
         }
     }
 
-    return Ok(tree_count);
+    return tree_count;
 }
