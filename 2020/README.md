@@ -11,3 +11,6 @@ The Year of Rust
 
 * Part 1: Learned how to split and access strings.
 * Part 2: Learned how to better handle errors and write higher-order functions.
+
+## Day 3
+* Part 1: Learned about *constants* and 2D vectors.

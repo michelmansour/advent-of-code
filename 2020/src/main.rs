@@ -5,12 +5,17 @@ use std::io::{BufRead, BufReader};
 use std::process;
 
 fn main() {
+    const NOT_IMPL: &str = "TODO";
+
     println!("Hello, world!");
     let (d1p1, d1p2) = run(&day1);
     println!("Day 1: p1 {} p2 {}", d1p1, d1p2);
 
     let (d2p1, d2p2) = run(&day2);
     println!("Day 2: p1 {} p2 {}", d2p1, d2p2);
+
+    let d3p1 = run(&day3);
+    println!("Day 3: p1 {} p2 {}", d3p1, NOT_IMPL);
 }
 
 fn run<F, T>(func: F) -> T
@@ -34,6 +39,17 @@ fn read_lines(day: i32) -> Result<Vec<String>, Box<dyn Error>> {
         }
     }
     return Ok(buffer);
+}
+
+fn read_grid(day: i32) -> Result<Vec<Vec<char>>, Box<dyn Error>> {
+    let mut grid: Vec<Vec<char>> = vec![];
+    let lines = read_lines(day)?;
+
+    for line in lines {
+        grid.push(line.chars().collect());
+    }
+
+    return Ok(grid);
 }
 
 fn day1() -> Result<(i32, i32), Box<dyn Error>> {
@@ -131,4 +147,34 @@ fn xor_char_at_pos(c: char, pos1: usize, pos2: usize, s: &str) -> bool {
     let (p1, p2) = (pos1 - 1, pos2 - 1);
     let cv: Vec<char> = s.chars().collect();
     return (cv[p1] == c && cv[p2] != c) || (cv[p1] != c && cv[p2] == c);
+}
+
+fn day3() -> Result<i32, Box<dyn Error>> {
+    const TREE: char = '#';
+    const MX: usize = 3;
+    const MY: usize = 1;
+
+    let grid = read_grid(3)?;
+    let bottom = grid.len();
+    let right = grid[0].len();
+
+    let mut cur_x = 0;
+    let mut cur_y = 0;
+
+    let mut tree_count = 0;
+
+    while cur_y + MY < bottom {
+        cur_x += MX;
+        cur_y += MY;
+
+        if cur_x >= right {
+            cur_x -= right;
+        }
+
+        if grid[cur_y][cur_x] == TREE {
+            tree_count += 1;
+        }
+    }
+
+    return Ok(tree_count);
 }
