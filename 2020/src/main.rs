@@ -4,6 +4,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process;
 
+use lazy_static::lazy_static;
+use regex::Regex;
+
 fn main() {
     const NOT_IMPL: &str = "TODO";
 
@@ -17,8 +20,8 @@ fn main() {
     let (d3p1, d3p2) = run(&day3);
     println!("Day 3: p1 {} p2 {}", d3p1, d3p2);
 
-    let d4p1 = run(&day4);
-    println!("Day 4: p1 {} p2 {}", d4p1, NOT_IMPL);
+    let (d4p1, d4p2) = run(&day4);
+    println!("Day 4: p1 {} p2 {}", d4p1, d4p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -225,24 +228,100 @@ fn check_slope(grid: &Vec<Vec<char>>, mx: usize, my: usize) -> u64 {
     return tree_count;
 }
 
-fn day4() -> Result<i32, Box<dyn Error>> {
+fn day4() -> Result<(i32, i32), Box<dyn Error>> {
     const REQUIRED_FIELDS: &[&str] = &["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
 
+    let mut valid_naive_entries = 0;
     let mut valid_entries = 0;
 
     let passport_entries = read_entries(4, "".to_string())?;
     for entry in passport_entries {
+        let mut is_naive_valid = true;
         let mut is_valid = true;
         for field in REQUIRED_FIELDS {
-            if !entry.contains_key(*field) {
+            if entry.contains_key(*field) {
+                let value = entry.get(*field).unwrap(); // we just confirmed the key exists
+                if is_valid {
+                    is_valid = match field {
+                        &"byr" => check_birth_year(value),
+                        &"iyr" => check_issue_year(value),
+                        &"eyr" => check_expiration_year(value),
+                        &"hgt" => check_height(value),
+                        &"hcl" => check_hair_color(value),
+                        &"ecl" => check_eye_color(value),
+                        &"pid" => check_passport_id(value),
+                        _ => true,
+                    };
+                }
+            } else {
+                is_naive_valid = false;
                 is_valid = false;
                 break;
             }
+        }
+        if is_naive_valid {
+            valid_naive_entries += 1
         }
         if is_valid {
             valid_entries += 1;
         }
     }
 
-    return Ok(valid_entries);
+    return Ok((valid_naive_entries, valid_entries));
+}
+
+fn check_num_in_range(start: i32, end: i32, value: &str) -> bool {
+    match value.parse::<i32>() {
+        Ok(value) => return value >= start && value <= end,
+        Err(_) => return false,
+    }
+}
+
+fn check_birth_year(birth_year: &str) -> bool {
+    return check_num_in_range(1920, 2002, birth_year);
+}
+
+fn check_issue_year(issue_year: &str) -> bool {
+    return check_num_in_range(2010, 2020, issue_year);
+}
+
+fn check_expiration_year(expiration_year: &str) -> bool {
+    return check_num_in_range(2020, 2030, expiration_year);
+}
+
+fn check_height(height: &str) -> bool {
+    let valid_hgt_range;
+    let unit_idx;
+
+    if let Some(idx) = height.find("cm") {
+        valid_hgt_range = (150, 193);
+        unit_idx = idx;
+    } else if let Some(idx) = height.find("in") {
+        valid_hgt_range = (59, 76);
+        unit_idx = idx;
+    } else {
+        return false;
+    }
+
+    let hgt_val = &height[0..unit_idx];
+    return check_num_in_range(valid_hgt_range.0, valid_hgt_range.1, hgt_val);
+}
+
+fn check_eye_color(eye_color: &str) -> bool {
+    const VALID_COLORS: &[&str] = &["amb", "blu", "brn", "gry", "grn", "hzl", "oth"];
+    return VALID_COLORS.contains(&eye_color);
+}
+
+fn check_hair_color(hair_color: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
+    }
+    return RE.is_match(hair_color);
+}
+
+fn check_passport_id(passport_id: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"^\d{9}$").unwrap();
+    }
+    return RE.is_match(passport_id);
 }

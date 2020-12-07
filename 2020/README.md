@@ -18,3 +18,4 @@ The Year of Rust
 
 ## Day 4
 * Part 1: Learned about `std::collections::HashMap` and string arrays.
+* Part 2: Learned about regular expressions and dependencies.
