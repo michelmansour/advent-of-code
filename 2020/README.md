@@ -21,4 +21,5 @@ The Year of Rust
 * Part 2: Learned about regular expressions and dependencies.
 
 ## Day 5
-* Part 1: Learned about floating point numbers
+* Part 1: Learned about floating point numbers.
+* Part 2: Learned I didn't really need floating point numbers in part 1.

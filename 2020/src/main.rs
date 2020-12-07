@@ -7,9 +7,9 @@ use std::process;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-fn main() {
-    const NOT_IMPL: &str = "TODO";
+const NOT_IMPL: &str = "TODO";
 
+fn main() {
     println!("Hello, world!");
     let (d1p1, d1p2) = run(&day1);
     println!("Day 1: p1 {} p2 {}", d1p1, d1p2);
@@ -23,7 +23,7 @@ fn main() {
     let (d4p1, d4p2) = run(&day4);
     println!("Day 4: p1 {} p2 {}", d4p1, d4p2);
 
-    let (d5p1, d5p2) = (run(&day5), NOT_IMPL);
+    let (d5p1, d5p2) = run(&day5);
     println!("Day 5: p1 {} p2 {}", d5p1, d5p2);
 }
 
@@ -322,20 +322,33 @@ fn check_hair_color(hair_color: &str) -> bool {
     return RE.is_match(hair_color);
 }
 
-fn day5() -> Result<i32, Box<dyn Error>> {
+fn check_passport_id(passport_id: &str) -> bool {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"^\d{9}$").unwrap();
+    }
+    return RE.is_match(passport_id);
+}
+
+fn day5() -> Result<(i32, i32), Box<dyn Error>> {
+    let get_seat_id = |(r, c): &(i32, i32)| r * 8 + c;
+
     let seats: Vec<(i32, i32)> = read_lines(5)?
         .iter()
         .map(|p| check_boarding_pass(p, 128, 8))
         .collect();
 
-    return match seats.iter().map(|(r, c)| r * 8 + c).max() {
-        Some(x) => Ok(x),
-        None => Ok(-1),
+    let max_seat = match seats.iter().map(get_seat_id).max() {
+        Some(x) => x,
+        None => -1,
     };
+
+    let missing_seat = find_missing_seat(seats, &get_seat_id);
+
+    return Ok((max_seat, missing_seat));
 }
 
 fn check_boarding_pass(boarding_pass: &str, num_rows: i32, num_cols: i32) -> (i32, i32) {
-    let row_part_len = (num_rows as f32).log2().floor() as usize;
+    let row_part_len = (num_cols - 1) as usize;
     return (
         find_seat_row(&boarding_pass[0..row_part_len], num_rows),
         find_seat_col(&boarding_pass[row_part_len..], num_cols),
@@ -365,9 +378,20 @@ fn find_seat_col(col_part: &str, num_cols: i32) -> i32 {
     return seat_binary_search(col_part, 'L', num_cols);
 }
 
-fn check_passport_id(passport_id: &str) -> bool {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"^\d{9}$").unwrap();
+fn find_missing_seat<F>(seats: Vec<(i32, i32)>, id_func: F) -> i32
+where
+    F: Fn(&(i32, i32)) -> i32,
+{
+    let mut seat_ids: Vec<i32> = seats.iter().map(&id_func).collect();
+    seat_ids.sort();
+
+    let mut expected_cur_seat_id = seat_ids[0];
+    for seat_id in seat_ids {
+        if expected_cur_seat_id == seat_id {
+            expected_cur_seat_id += 1;
+        } else {
+            return expected_cur_seat_id;
+        }
     }
-    return RE.is_match(passport_id);
+    return expected_cur_seat_id + 1;
 }
