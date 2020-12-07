@@ -22,6 +22,9 @@ fn main() {
 
     let (d4p1, d4p2) = run(&day4);
     println!("Day 4: p1 {} p2 {}", d4p1, d4p2);
+
+    let (d5p1, d5p2) = (run(&day5), NOT_IMPL);
+    println!("Day 5: p1 {} p2 {}", d5p1, d5p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -317,6 +320,49 @@ fn check_hair_color(hair_color: &str) -> bool {
         static ref RE: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
     }
     return RE.is_match(hair_color);
+}
+
+fn day5() -> Result<i32, Box<dyn Error>> {
+    let seats: Vec<(i32, i32)> = read_lines(5)?
+        .iter()
+        .map(|p| check_boarding_pass(p, 128, 8))
+        .collect();
+
+    return match seats.iter().map(|(r, c)| r * 8 + c).max() {
+        Some(x) => Ok(x),
+        None => Ok(-1),
+    };
+}
+
+fn check_boarding_pass(boarding_pass: &str, num_rows: i32, num_cols: i32) -> (i32, i32) {
+    let row_part_len = (num_rows as f32).log2().floor() as usize;
+    return (
+        find_seat_row(&boarding_pass[0..row_part_len], num_rows),
+        find_seat_col(&boarding_pass[row_part_len..], num_cols),
+    );
+}
+
+fn seat_binary_search(directions: &str, lower_half_ind: char, size: i32) -> i32 {
+    let (mut first, mut last, mut mid) = (0, size - 1, size / 2 - 1);
+
+    for dir in directions.chars() {
+        if dir == lower_half_ind {
+            last = mid;
+        } else {
+            first = mid + 1;
+        }
+        mid = (last - first) / 2 + first;
+    }
+
+    return mid;
+}
+
+fn find_seat_row(row_part: &str, num_rows: i32) -> i32 {
+    return seat_binary_search(row_part, 'F', num_rows);
+}
+
+fn find_seat_col(col_part: &str, num_cols: i32) -> i32 {
+    return seat_binary_search(col_part, 'L', num_cols);
 }
 
 fn check_passport_id(passport_id: &str) -> bool {
