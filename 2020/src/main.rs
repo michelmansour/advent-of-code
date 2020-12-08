@@ -7,7 +7,7 @@ use std::process;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-const NOT_IMPL: &str = "TODO";
+const NOT_IMPL: i32 = -1;
 
 fn main() {
     println!("Hello, world!");
@@ -25,6 +25,9 @@ fn main() {
 
     let (d5p1, d5p2) = run(&day5);
     println!("Day 5: p1 {} p2 {}", d5p1, d5p2);
+
+    let (d6p1, d6p2) = run(&day6);
+    println!("Day 5: p1 {} p2 {}", d6p1, d6p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -394,4 +397,26 @@ where
         }
     }
     return expected_cur_seat_id + 1;
+}
+
+fn day6() -> Result<(i32, i32), Box<dyn Error>> {
+    let lines = read_lines(6)?;
+    let mut group_answers: Vec<HashSet<char>> = vec![];
+
+    let mut cur_group = HashSet::new();
+    for line in lines {
+        if line.is_empty() {
+            group_answers.push(cur_group);
+            cur_group = HashSet::new();
+        } else {
+            cur_group.extend(line.chars());
+        }
+    }
+    if !cur_group.is_empty() {
+        group_answers.push(cur_group);
+    }
+
+    let total_uniq_qs_per_group: usize = group_answers.iter().map(HashSet::len).sum();
+
+    return Ok((total_uniq_qs_per_group as i32, NOT_IMPL));
 }

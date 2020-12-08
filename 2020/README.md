@@ -23,3 +23,6 @@ The Year of Rust
 ## Day 5
 * Part 1: Learned about floating point numbers.
 * Part 2: Learned I didn't really need floating point numbers in part 1.
+
+## Day 6
+* Part 1: Learned that there is not always something new to learn.
