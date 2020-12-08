@@ -401,22 +401,41 @@ where
 
 fn day6() -> Result<(i32, i32), Box<dyn Error>> {
     let lines = read_lines(6)?;
-    let mut group_answers: Vec<HashSet<char>> = vec![];
+    let mut group_answers: Vec<(i32, HashMap<char, i32>)> = vec![];
 
-    let mut cur_group = HashSet::new();
+    let mut cur_group = HashMap::new();
+    let mut group_size = 0;
     for line in lines {
         if line.is_empty() {
-            group_answers.push(cur_group);
-            cur_group = HashSet::new();
+            group_answers.push((group_size, cur_group));
+            cur_group = HashMap::new();
+            group_size = 0;
         } else {
-            cur_group.extend(line.chars());
+            group_size += 1;
+            for c in line.chars() {
+                let counter = cur_group.entry(c).or_insert(0);
+                *counter += 1;
+            }
         }
     }
     if !cur_group.is_empty() {
-        group_answers.push(cur_group);
+        group_answers.push((group_size, cur_group));
     }
 
-    let total_uniq_qs_per_group: usize = group_answers.iter().map(HashSet::len).sum();
+    let total_uniq_qs_per_group: usize = group_answers.iter().map(|(_, m)| m.len()).sum();
+    let total_univ_qs_per_group: usize = group_answers
+        .iter()
+        .map(|(size, counts)| {
+            counts
+                .iter()
+                .filter(|(_, v)| *v == size)
+                .map(|(k, _)| *k)
+                .count()
+        })
+        .sum();
 
-    return Ok((total_uniq_qs_per_group as i32, NOT_IMPL));
+    return Ok((
+        total_uniq_qs_per_group as i32,
+        total_univ_qs_per_group as i32,
+    ));
 }
