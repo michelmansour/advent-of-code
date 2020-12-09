@@ -27,3 +27,6 @@ The Year of Rust
 ## Day 6
 * Part 1: Learned that there is not always something new to learn.
 * Part 2: Learned about the Entry API for hash maps.
+
+## Interlude
+Read more about ownership, references, type inference, and slices to idiomaticize the code a bit better.

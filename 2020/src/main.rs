@@ -44,30 +44,27 @@ fn read_lines(day: i32) -> Result<Vec<String>, Box<dyn Error>> {
     let f = File::open(format!("./input/day{}.txt", day))?;
     let lines = BufReader::new(f).lines();
 
-    let mut buffer: Vec<String> = vec![];
+    let mut buffer = Vec::new();
     for line in lines {
-        if let Ok(x) = line {
-            buffer.push(x);
+        if let Ok(line) = line {
+            buffer.push(line);
         }
     }
-    return Ok(buffer);
+    Ok(buffer)
 }
 
 fn read_grid(day: i32) -> Result<Vec<Vec<char>>, Box<dyn Error>> {
-    let mut grid: Vec<Vec<char>> = vec![];
+    let mut grid = vec![];
     let lines = read_lines(day)?;
 
     for line in lines {
         grid.push(line.chars().collect());
     }
 
-    return Ok(grid);
+    Ok(grid)
 }
 
-fn read_entries(
-    day: i32,
-    separator: String,
-) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
+fn read_entries(day: i32, separator: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
     let f = File::open(format!("./input/day{}.txt", day))?;
     let lines = BufReader::new(f).lines();
 
@@ -80,9 +77,8 @@ fn read_entries(
                 entries.push(cur_entry);
                 cur_entry = HashMap::new();
             } else {
-                let fields = line.split_ascii_whitespace();
-                for field in fields {
-                    let kv: Vec<&str> = field.split(':').collect();
+                for field in line.split_ascii_whitespace() {
+                    let kv: Vec<_> = field.split(':').collect();
                     cur_entry.insert(String::from(kv[0].trim()), String::from(kv[1].trim()));
                 }
             }
@@ -93,24 +89,21 @@ fn read_entries(
         entries.push(cur_entry);
     }
 
-    return Ok(entries);
+    Ok(entries)
 }
 
 fn day1() -> Result<(i32, i32), Box<dyn Error>> {
-    let nums = read_lines(1)?
-        .iter()
-        .map(|s| s.parse::<i32>().unwrap())
-        .collect();
+    let nums = read_lines(1)?.iter().map(|s| s.parse().unwrap()).collect();
 
     let (x, y) = two_sum(&nums, 2020);
     let (n, p, q) = three_sum(&nums, 2020);
-    return Ok((x * y, n * p * q));
+    Ok((x * y, n * p * q))
 }
 
 fn two_sum(nums: &Vec<i32>, target: i32) -> (i32, i32) {
     let mut complements = HashSet::new();
 
-    for n in nums.iter() {
+    for n in nums {
         let comp = target - n;
         if complements.contains(n) {
             return (*n, comp);
@@ -118,20 +111,20 @@ fn two_sum(nums: &Vec<i32>, target: i32) -> (i32, i32) {
             complements.insert(comp);
         }
     }
-    return (-1, 1);
+    (-1, 1)
 }
 
 fn three_sum(nums: &Vec<i32>, target: i32) -> (i32, i32, i32) {
-    for n in nums.iter() {
-        for p in nums.iter() {
-            for q in nums.iter() {
+    for n in nums {
+        for p in nums {
+            for q in nums {
                 if n + p + q == target {
                     return (*n, *p, *q);
                 }
             }
         }
     }
-    return (-1, -1, -1);
+    (-1, -1, -1)
 }
 
 fn day2() -> Result<(i32, i32), Box<dyn Error>> {
@@ -139,7 +132,7 @@ fn day2() -> Result<(i32, i32), Box<dyn Error>> {
     let mut toboggan = 0;
 
     for line in read_lines(2)? {
-        let v: Vec<&str> = line.split(':').collect();
+        let v: Vec<_> = line.split(':').collect();
         let (policy, password) = (v[0].trim(), v[1].trim());
 
         if check_password_against_sled_policy(policy, password) {
@@ -150,47 +143,44 @@ fn day2() -> Result<(i32, i32), Box<dyn Error>> {
         }
     }
 
-    return Ok((sled, toboggan));
+    Ok((sled, toboggan))
 }
 
 fn check_password_against_sled_policy(policy: &str, password: &str) -> bool {
     let w: Vec<_> = policy.split_ascii_whitespace().collect();
     let (range_str, character_str) = (w[0].trim(), w[1].trim());
     let range: Vec<_> = range_str.split('-').collect();
-    let (min, max) = (range[0].parse::<i32>(), range[1].parse::<i32>());
+    let (min, max) = (
+        range[0].parse::<usize>().unwrap(),
+        range[1].parse::<usize>().unwrap(),
+    );
 
     let count = count_char_in_str(character_str.chars().next().unwrap(), password);
-    return count >= min.unwrap() && count <= max.unwrap();
+    count >= min && count <= max
 }
 
-fn count_char_in_str(c: char, s: &str) -> i32 {
-    let mut count = 0;
-    for ch in s.chars() {
-        if c == ch {
-            count += 1;
-        }
-    }
-    return count;
+fn count_char_in_str(c: char, s: &str) -> usize {
+    s.chars().filter(|ch| *ch == c).count()
 }
 
 fn check_password_against_toboggan_policy(policy: &str, password: &str) -> bool {
     let w: Vec<_> = policy.split_ascii_whitespace().collect();
     let (pos_str, character_str) = (w[0].trim(), w[1].trim());
     let posv: Vec<_> = pos_str.split('-').collect();
-    let (pos1, pos2) = (posv[0].parse::<usize>(), posv[1].parse::<usize>());
+    let (pos1, pos2) = (posv[0].parse(), posv[1].parse());
 
-    return xor_char_at_pos(
+    xor_char_at_pos(
         character_str.chars().next().unwrap(),
         pos1.unwrap(),
         pos2.unwrap(),
         password,
-    );
+    )
 }
 
 fn xor_char_at_pos(c: char, pos1: usize, pos2: usize, s: &str) -> bool {
     let (p1, p2) = (pos1 - 1, pos2 - 1);
-    let cv: Vec<char> = s.chars().collect();
-    return (cv[p1] == c && cv[p2] != c) || (cv[p1] != c && cv[p2] == c);
+    let cv: Vec<_> = s.chars().collect();
+    (cv[p1] == c && cv[p2] != c) || (cv[p1] != c && cv[p2] == c)
 }
 
 fn day3() -> Result<(u64, u64), Box<dyn Error>> {
@@ -200,11 +190,11 @@ fn day3() -> Result<(u64, u64), Box<dyn Error>> {
 
     let mut total_trees_product = 1u64;
     let slopes = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
-    for (x, y) in slopes.iter() {
-        total_trees_product *= check_slope(&grid, *x, *y);
+    for &(x, y) in &slopes {
+        total_trees_product *= check_slope(&grid, x, y);
     }
 
-    return Ok((part1, total_trees_product));
+    Ok((part1, total_trees_product))
 }
 
 fn check_slope(grid: &Vec<Vec<char>>, mx: usize, my: usize) -> u64 {
@@ -231,44 +221,43 @@ fn check_slope(grid: &Vec<Vec<char>>, mx: usize, my: usize) -> u64 {
         }
     }
 
-    return tree_count;
+    tree_count
 }
 
 fn day4() -> Result<(i32, i32), Box<dyn Error>> {
-    const REQUIRED_FIELDS: &[&str] = &["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
+    const REQUIRED_FIELDS: [&str; 7] = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
 
     let mut valid_naive_entries = 0;
     let mut valid_entries = 0;
 
-    let passport_entries = read_entries(4, "".to_string())?;
-    for entry in passport_entries {
-        let mut is_naive_valid = true;
-        let mut is_valid = true;
-        for field in REQUIRED_FIELDS {
-            if entry.contains_key(*field) {
-                let value = entry.get(*field).unwrap(); // we just confirmed the key exists
-                if is_valid {
-                    is_valid = match field {
-                        &"byr" => check_birth_year(value),
-                        &"iyr" => check_issue_year(value),
-                        &"eyr" => check_expiration_year(value),
-                        &"hgt" => check_height(value),
-                        &"hcl" => check_hair_color(value),
-                        &"ecl" => check_eye_color(value),
-                        &"pid" => check_passport_id(value),
+    let passport_entries = read_entries(4, "")?;
+    for entry in &passport_entries {
+        let mut is_valid_props = true;
+        let mut is_valid_values = true;
+        for &field in &REQUIRED_FIELDS {
+            if let Some(value) = entry.get(field) {
+                if is_valid_values {
+                    is_valid_values = match field {
+                        "byr" => check_birth_year(value),
+                        "iyr" => check_issue_year(value),
+                        "eyr" => check_expiration_year(value),
+                        "hgt" => check_height(value),
+                        "hcl" => check_hair_color(value),
+                        "ecl" => check_eye_color(value),
+                        "pid" => check_passport_id(value),
                         _ => true,
                     };
                 }
             } else {
-                is_naive_valid = false;
-                is_valid = false;
+                is_valid_props = false;
+                is_valid_values = false;
                 break;
             }
         }
-        if is_naive_valid {
+        if is_valid_props {
             valid_naive_entries += 1
         }
-        if is_valid {
+        if is_valid_values {
             valid_entries += 1;
         }
     }
@@ -278,64 +267,56 @@ fn day4() -> Result<(i32, i32), Box<dyn Error>> {
 
 fn check_num_in_range(start: i32, end: i32, value: &str) -> bool {
     match value.parse::<i32>() {
-        Ok(value) => return value >= start && value <= end,
-        Err(_) => return false,
+        Ok(value) => value >= start && value <= end,
+        Err(_) => false,
     }
 }
 
 fn check_birth_year(birth_year: &str) -> bool {
-    return check_num_in_range(1920, 2002, birth_year);
+    check_num_in_range(1920, 2002, birth_year)
 }
 
 fn check_issue_year(issue_year: &str) -> bool {
-    return check_num_in_range(2010, 2020, issue_year);
+    check_num_in_range(2010, 2020, issue_year)
 }
 
 fn check_expiration_year(expiration_year: &str) -> bool {
-    return check_num_in_range(2020, 2030, expiration_year);
+    check_num_in_range(2020, 2030, expiration_year)
 }
 
 fn check_height(height: &str) -> bool {
-    let valid_hgt_range;
-    let unit_idx;
+    let unit_idx = height.len() - 2;
+    let valid_hgt_range = match &height[unit_idx..] {
+        "cm" => (150, 193),
+        "in" => (59, 76),
+        _ => return false,
+    };
 
-    if let Some(idx) = height.find("cm") {
-        valid_hgt_range = (150, 193);
-        unit_idx = idx;
-    } else if let Some(idx) = height.find("in") {
-        valid_hgt_range = (59, 76);
-        unit_idx = idx;
-    } else {
-        return false;
-    }
-
-    let hgt_val = &height[0..unit_idx];
-    return check_num_in_range(valid_hgt_range.0, valid_hgt_range.1, hgt_val);
+    check_num_in_range(valid_hgt_range.0, valid_hgt_range.1, &height[..unit_idx])
 }
 
 fn check_eye_color(eye_color: &str) -> bool {
-    const VALID_COLORS: &[&str] = &["amb", "blu", "brn", "gry", "grn", "hzl", "oth"];
-    return VALID_COLORS.contains(&eye_color);
+    ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&eye_color)
 }
 
 fn check_hair_color(hair_color: &str) -> bool {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
     }
-    return RE.is_match(hair_color);
+    RE.is_match(hair_color)
 }
 
 fn check_passport_id(passport_id: &str) -> bool {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"^\d{9}$").unwrap();
     }
-    return RE.is_match(passport_id);
+    RE.is_match(passport_id)
 }
 
 fn day5() -> Result<(i32, i32), Box<dyn Error>> {
     let get_seat_id = |(r, c): &(i32, i32)| r * 8 + c;
 
-    let seats: Vec<(i32, i32)> = read_lines(5)?
+    let seats: Vec<_> = read_lines(5)?
         .iter()
         .map(|p| check_boarding_pass(p, 128, 8))
         .collect();
@@ -347,15 +328,15 @@ fn day5() -> Result<(i32, i32), Box<dyn Error>> {
 
     let missing_seat = find_missing_seat(seats, &get_seat_id);
 
-    return Ok((max_seat, missing_seat));
+    Ok((max_seat, missing_seat))
 }
 
 fn check_boarding_pass(boarding_pass: &str, num_rows: i32, num_cols: i32) -> (i32, i32) {
     let row_part_len = (num_cols - 1) as usize;
-    return (
+    (
         find_seat_row(&boarding_pass[0..row_part_len], num_rows),
         find_seat_col(&boarding_pass[row_part_len..], num_cols),
-    );
+    )
 }
 
 fn seat_binary_search(directions: &str, lower_half_ind: char, size: i32) -> i32 {
@@ -370,22 +351,22 @@ fn seat_binary_search(directions: &str, lower_half_ind: char, size: i32) -> i32 
         mid = (last - first) / 2 + first;
     }
 
-    return mid;
+    mid
 }
 
 fn find_seat_row(row_part: &str, num_rows: i32) -> i32 {
-    return seat_binary_search(row_part, 'F', num_rows);
+    seat_binary_search(row_part, 'F', num_rows)
 }
 
 fn find_seat_col(col_part: &str, num_cols: i32) -> i32 {
-    return seat_binary_search(col_part, 'L', num_cols);
+    seat_binary_search(col_part, 'L', num_cols)
 }
 
 fn find_missing_seat<F>(seats: Vec<(i32, i32)>, id_func: F) -> i32
 where
     F: Fn(&(i32, i32)) -> i32,
 {
-    let mut seat_ids: Vec<i32> = seats.iter().map(&id_func).collect();
+    let mut seat_ids: Vec<_> = seats.iter().map(&id_func).collect();
     seat_ids.sort();
 
     let mut expected_cur_seat_id = seat_ids[0];
@@ -396,12 +377,12 @@ where
             return expected_cur_seat_id;
         }
     }
-    return expected_cur_seat_id + 1;
+    expected_cur_seat_id + 1
 }
 
 fn day6() -> Result<(i32, i32), Box<dyn Error>> {
     let lines = read_lines(6)?;
-    let mut group_answers: Vec<(i32, HashMap<char, i32>)> = vec![];
+    let mut group_answers = Vec::new();
 
     let mut cur_group = HashMap::new();
     let mut group_size = 0;
@@ -428,14 +409,14 @@ fn day6() -> Result<(i32, i32), Box<dyn Error>> {
         .map(|(size, counts)| {
             counts
                 .iter()
-                .filter(|(_, v)| *v == size)
-                .map(|(k, _)| *k)
+                .filter(|&(_, v)| v == size)
+                .map(|(k, _)| k)
                 .count()
         })
         .sum();
 
-    return Ok((
+    Ok((
         total_uniq_qs_per_group as i32,
         total_univ_qs_per_group as i32,
-    ));
+    ))
 }
