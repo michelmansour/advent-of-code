@@ -30,3 +30,6 @@ The Year of Rust
 
 ## Interlude
 Read more about ownership, references, type inference, and slices to idiomaticize the code a bit better.
+
+## Day 7
+* Part 1: Recalled depth-first search.

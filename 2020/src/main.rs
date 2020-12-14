@@ -27,7 +27,10 @@ fn main() {
     println!("Day 5: p1 {} p2 {}", d5p1, d5p2);
 
     let (d6p1, d6p2) = run(&day6);
-    println!("Day 5: p1 {} p2 {}", d6p1, d6p2);
+    println!("Day 6: p1 {} p2 {}", d6p1, d6p2);
+
+    let (d7p1, d7p2) = run(&day7);
+    println!("Day 7: p1 {} p2 {}", d7p1, d7p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -419,4 +422,53 @@ fn day6() -> Result<(i32, i32), Box<dyn Error>> {
         total_uniq_qs_per_group as i32,
         total_univ_qs_per_group as i32,
     ))
+}
+
+fn day7() -> Result<(i32, i32), Box<dyn Error>> {
+    let lines = read_lines(7)?;
+
+    let mut contains: HashMap<String, HashMap<String, i32>> = HashMap::new();
+    let mut contained_by: HashMap<String, Vec<String>> = HashMap::new();
+
+    for line in lines {
+        let bags: Vec<&str> = line.trim_end_matches('.').split(" bags contain ").collect();
+        if bags[1] != "no other bags" {
+            let containing_bag = bags[0];
+            let contained_bags = bags[1].split(',').fold(HashMap::new(), |mut acc, s| {
+                let bag_props: Vec<&str> = s.trim().split_ascii_whitespace().collect();
+                let mut bag_color = String::from(bag_props[1]);
+                bag_color.push_str(" ");
+                bag_color.push_str(bag_props[2]);
+                acc.insert(bag_color, bag_props[0].parse::<i32>().unwrap());
+                acc
+            });
+
+            for bag in contained_bags.keys() {
+                let v = contained_by.entry(String::from(bag)).or_insert(Vec::new());
+                v.push(String::from(containing_bag));
+            }
+            contains.insert(String::from(containing_bag), contained_bags);
+        }
+    }
+    return Ok((count_paths("shiny gold", &contained_by) as i32, NOT_IMPL));
+}
+
+fn count_paths(start: &str, graph: &HashMap<String, Vec<String>>) -> usize {
+    let mut stack = vec![start];
+    let mut outermost_colors = HashSet::new();
+
+    let empty_neighbors = Vec::new();
+    while !stack.is_empty() {
+        let top = stack.pop().unwrap();
+        let neighbors = match graph.get(top) {
+            Some(neighbors) => neighbors,
+            None => &empty_neighbors,
+        };
+        for n in neighbors {
+            stack.push(n);
+            outermost_colors.insert(n);
+        }
+    }
+
+    return outermost_colors.len();
 }
