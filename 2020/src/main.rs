@@ -576,7 +576,10 @@ fn fix_program(program: &[(&str, i32)]) -> i32 {
 fn day9() -> Result<(i64, i64), Box<dyn Error>> {
     let lines: Vec<i64> = read_lines(9)?.iter().map(|l| l.parse().unwrap()).collect();
 
-    Ok((find_first_invalid_xmas(&lines, 25), NOT_IMPL))
+    Ok((
+        find_first_invalid_xmas(&lines, 25),
+        find_weakness_xmas(&lines, 25),
+    ))
 }
 
 fn find_first_invalid_xmas(data: &Vec<i64>, window_length: usize) -> i64 {
@@ -597,4 +600,27 @@ fn find_first_invalid_xmas(data: &Vec<i64>, window_length: usize) -> i64 {
 
 fn validate_next_xmas(window: &[i64], target: i64) -> bool {
     two_sum(window, target) != (-1, -1)
+}
+
+fn find_weakness_xmas(data: &Vec<i64>, window_length: usize) -> i64 {
+    let invalid = find_first_invalid_xmas(&data, window_length);
+    let mut result = 0;
+
+    for i in 0..data.len() {
+        let start = i;
+        let mut j = i;
+        let mut sum = 0;
+        while sum < invalid {
+            sum += data[j];
+            j += 1;
+        }
+        if sum == invalid {
+            let block = &data[start..j];
+            let max = block.iter().max().unwrap();
+            let min = block.iter().min().unwrap();
+            result = min + max;
+            break;
+        }
+    }
+    result
 }
