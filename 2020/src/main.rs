@@ -11,6 +11,7 @@ const NOT_IMPL: i64 = -1;
 
 fn main() {
     println!("Hello, world!");
+
     let (d1p1, d1p2) = run(&day1);
     println!("Day 1: p1 {} p2 {}", d1p1, d1p2);
 
@@ -37,6 +38,9 @@ fn main() {
 
     let (d9p1, d9p2) = run(&day9);
     println!("Day 9: p1 {} p2 {}", d9p1, d9p2);
+
+    let (d10p1, d10p2) = run(&day10);
+    println!("Day 10: p1 {} p2 {}", d10p1, d10p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -623,4 +627,41 @@ fn find_weakness_xmas(data: &Vec<i64>, window_length: usize) -> i64 {
         }
     }
     result
+}
+
+fn day10() -> Result<(i32, i32), Box<dyn Error>> {
+    let data: Vec<i32> = read_lines(10)?.iter().map(|d| d.parse().unwrap()).collect();
+
+    let joltage_diffs = calc_joltage_diffs(&data);
+    Ok((joltage_diffs.0 * joltage_diffs.2, NOT_IMPL as i32))
+}
+
+fn calc_joltage_diffs(joltages: &[i32]) -> (i32, i32, i32) {
+    let joltage_chain = make_full_joltage_chain(joltages);
+
+    let mut ones = 0;
+    let mut twos = 0;
+    let mut threes = 1; // plus the 3 at the end
+
+    let mut cur_joltage = 0;
+
+    for j in joltage_chain {
+        match j - cur_joltage {
+            1 => ones += 1,
+            2 => twos += 1,
+            _ => threes += 1,
+        };
+        cur_joltage = j;
+    }
+
+    (ones, twos, threes)
+}
+
+fn make_full_joltage_chain(joltages: &[i32]) -> Vec<i32> {
+    let mut copy = Vec::new();
+    for j in joltages {
+        copy.push(*j);
+    }
+    copy.sort();
+    copy
 }

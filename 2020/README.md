@@ -42,3 +42,6 @@ Read more about ownership, references, type inference, and slices to idiomaticiz
 ## Day 9
 * Part 1: Learned the value of `i64`.
 * Part 2: Sometimes n^2 is ok.
+
+## Day 10
+* Part 1: Learned sorting in place and the humor in the prefix `jol`.
