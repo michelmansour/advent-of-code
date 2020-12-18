@@ -7,7 +7,7 @@ use std::process;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-const NOT_IMPL: i32 = -1;
+const NOT_IMPL: i64 = -1;
 
 fn main() {
     println!("Hello, world!");
@@ -33,7 +33,10 @@ fn main() {
     println!("Day 7: p1 {} p2 {}", d7p1, d7p2);
 
     let (d8p1, d8p2) = run(&day8);
-    println!("Day 7: p1 {} p2 {}", d8p1, d8p2);
+    println!("Day 8: p1 {} p2 {}", d8p1, d8p2);
+
+    let (d9p1, d9p2) = run(&day9);
+    println!("Day 9: p1 {} p2 {}", d9p1, d9p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -98,29 +101,29 @@ fn read_entries(day: i32, separator: &str) -> Result<Vec<HashMap<String, String>
     Ok(entries)
 }
 
-fn day1() -> Result<(i32, i32), Box<dyn Error>> {
-    let nums = read_lines(1)?.iter().map(|s| s.parse().unwrap()).collect();
+fn day1() -> Result<(i64, i64), Box<dyn Error>> {
+    let nums: Vec<i64> = read_lines(1)?.iter().map(|s| s.parse().unwrap()).collect();
 
     let (x, y) = two_sum(&nums, 2020);
     let (n, p, q) = three_sum(&nums, 2020);
     Ok((x * y, n * p * q))
 }
 
-fn two_sum(nums: &Vec<i32>, target: i32) -> (i32, i32) {
+fn two_sum(nums: &[i64], target: i64) -> (i64, i64) {
     let mut complements = HashSet::new();
 
     for n in nums {
         let comp = target - n;
-        if complements.contains(n) {
+        if complements.contains(n) && *n != comp {
             return (*n, comp);
         } else {
             complements.insert(comp);
         }
     }
-    (-1, 1)
+    (-1, -1)
 }
 
-fn three_sum(nums: &Vec<i32>, target: i32) -> (i32, i32, i32) {
+fn three_sum(nums: &[i64], target: i64) -> (i64, i64, i64) {
     for n in nums {
         for p in nums {
             for q in nums {
@@ -503,7 +506,7 @@ fn day8() -> Result<(i32, i32), Box<dyn Error>> {
         })
         .collect();
 
-    return Ok((find_infinite_loop(&program).0, fix_program(&program)));
+    Ok((find_infinite_loop(&program).0, fix_program(&program)))
 }
 
 fn find_infinite_loop(program: &[(&str, i32)]) -> (i32, bool) {
@@ -568,4 +571,30 @@ fn fix_program(program: &[(&str, i32)]) -> i32 {
         line += 1;
     }
     acc
+}
+
+fn day9() -> Result<(i64, i64), Box<dyn Error>> {
+    let lines: Vec<i64> = read_lines(9)?.iter().map(|l| l.parse().unwrap()).collect();
+
+    Ok((find_first_invalid_xmas(&lines, 25), NOT_IMPL))
+}
+
+fn find_first_invalid_xmas(data: &Vec<i64>, window_length: usize) -> i64 {
+    let mut start = 0;
+    let mut window = &data[start..window_length];
+    let mut result = 0;
+
+    for i in window_length..data.len() {
+        if !validate_next_xmas(window, data[i]) {
+            result = data[i];
+            break;
+        }
+        start += 1;
+        window = &data[start..start + window_length];
+    }
+    result
+}
+
+fn validate_next_xmas(window: &[i64], target: i64) -> bool {
+    two_sum(window, target) != (-1, -1)
 }

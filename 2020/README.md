@@ -38,3 +38,6 @@ Read more about ownership, references, type inference, and slices to idiomaticiz
 ## Day 8
 * Part 1: Learned more about tuples.
 * Part 2: Every `Vec` is a lesson in borrowing.
+
+## Day 9
+* Part 1: Learned the value of `i64`.
