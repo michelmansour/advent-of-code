@@ -34,3 +34,7 @@ Read more about ownership, references, type inference, and slices to idiomaticiz
 ## Day 7
 * Part 1: Recalled depth-first search.
 * Part 2: Recalled recursion.
+
+## Day 8
+* Part 1: Learned more about tuples.
+* Part 2: Every `Vec` is a lesson in borrowing.

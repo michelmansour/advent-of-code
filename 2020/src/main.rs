@@ -31,6 +31,9 @@ fn main() {
 
     let (d7p1, d7p2) = run(&day7);
     println!("Day 7: p1 {} p2 {}", d7p1, d7p2);
+
+    let (d8p1, d8p2) = run(&day8);
+    println!("Day 7: p1 {} p2 {}", d8p1, d8p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -488,4 +491,81 @@ fn count_inner_bags(start: &str, graph: &HashMap<String, HashMap<String, i32>>) 
         }
         None => 0,
     }
+}
+
+fn day8() -> Result<(i32, i32), Box<dyn Error>> {
+    let lines = read_lines(8)?;
+    let program: Vec<(&str, i32)> = lines
+        .iter()
+        .map(|l| {
+            let inst: Vec<&str> = l.split_ascii_whitespace().collect();
+            (inst[0], inst[1].parse().unwrap())
+        })
+        .collect();
+
+    return Ok((find_infinite_loop(&program).0, fix_program(&program)));
+}
+
+fn find_infinite_loop(program: &[(&str, i32)]) -> (i32, bool) {
+    let program_length = program.len() as i32;
+
+    let mut i = 0;
+    let mut found_loop = false;
+    let mut visited = HashSet::new();
+    let mut accumulator = 0;
+
+    while !found_loop && i < program_length && i >= 0 {
+        if visited.contains(&i) {
+            found_loop = true
+        } else {
+            visited.insert(i);
+            let (inst, n) = &program[i as usize];
+            match inst.as_ref() {
+                "acc" => {
+                    i += 1;
+                    accumulator += n;
+                }
+                "jmp" => i += n,
+                _ => i += 1, // nop
+            }
+        }
+    }
+
+    (accumulator, found_loop)
+}
+
+fn fix_program(program: &[(&str, i32)]) -> i32 {
+    let mut broken = true;
+    let mut line = 0;
+    let mut acc = 0;
+
+    let mut prgm = Vec::new();
+    for line in program {
+        prgm.push((line.0, line.1));
+    }
+
+    while broken && line < program.len() {
+        let mut run = false;
+        let (orig_inst, value) = program[line];
+        let new_inst = match orig_inst {
+            "jmp" => {
+                run = true;
+                "nop"
+            }
+            "nop" => {
+                run = true;
+                "jmp"
+            }
+            _ => orig_inst,
+        };
+        if run {
+            prgm[line] = (new_inst, value);
+            let result = find_infinite_loop(&prgm);
+            acc = result.0;
+            broken = result.1;
+            prgm[line] = (orig_inst, value);
+        }
+        line += 1;
+    }
+    acc
 }
