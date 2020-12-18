@@ -33,3 +33,4 @@ Read more about ownership, references, type inference, and slices to idiomaticiz
 
 ## Day 7
 * Part 1: Recalled depth-first search.
+* Part 2: Recalled recursion.

@@ -450,10 +450,13 @@ fn day7() -> Result<(i32, i32), Box<dyn Error>> {
             contains.insert(String::from(containing_bag), contained_bags);
         }
     }
-    return Ok((count_paths("shiny gold", &contained_by) as i32, NOT_IMPL));
+    return Ok((
+        count_reachable_nodes("shiny gold", &contained_by) as i32,
+        count_inner_bags("shiny gold", &contains),
+    ));
 }
 
-fn count_paths(start: &str, graph: &HashMap<String, Vec<String>>) -> usize {
+fn count_reachable_nodes(start: &str, graph: &HashMap<String, Vec<String>>) -> usize {
     let mut stack = vec![start];
     let mut outermost_colors = HashSet::new();
 
@@ -469,6 +472,20 @@ fn count_paths(start: &str, graph: &HashMap<String, Vec<String>>) -> usize {
             outermost_colors.insert(n);
         }
     }
+    outermost_colors.len()
+}
 
-    return outermost_colors.len();
+fn count_inner_bags(start: &str, graph: &HashMap<String, HashMap<String, i32>>) -> i32 {
+    // println!("{:#?}", graph);
+    match graph.get(start) {
+        Some(nested) => {
+            let mut total = 0;
+            for b in nested.keys() {
+                let c = nested.get(b).unwrap();
+                total += c + c * count_inner_bags(b, graph);
+            }
+            total
+        }
+        None => 0,
+    }
 }
