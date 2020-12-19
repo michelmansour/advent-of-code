@@ -41,6 +41,9 @@ fn main() {
 
     let (d10p1, d10p2) = run(&day10);
     println!("Day 10: p1 {} p2 {}", d10p1, d10p2);
+
+    let (d11p1, d11p2) = run(&day11);
+    println!("Day 11: p1 {} p2 {}", d11p1, d11p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -664,4 +667,99 @@ fn make_full_joltage_chain(joltages: &[i32]) -> Vec<i32> {
     }
     copy.sort();
     copy
+}
+
+fn day11() -> Result<(i64, i64), Box<dyn Error>> {
+    let initial_layout = read_grid(11)?;
+
+    let final_layout = waiting_area_game_of_life(&initial_layout);
+    let seat_statuses = count_seats_by_occupied_status(&final_layout);
+    Ok((seat_statuses.0, NOT_IMPL))
+}
+
+fn count_seats_by_occupied_status(seat_layout: &[Vec<char>]) -> (i64, i64) {
+    let mut occupied = 0;
+    let mut empty = 0;
+
+    for i in 0..seat_layout.len() {
+        for j in 0..seat_layout[i].len() {
+            match seat_layout[i][j] {
+                '#' => occupied += 1,
+                'L' => empty += 1,
+                _ => (),
+            }
+        }
+    }
+
+    (occupied, empty)
+}
+
+fn count_adjacent_occupied_seats(seat_layout: &[Vec<char>], seat_coord: (usize, usize)) -> usize {
+    let mut occupied = 0;
+    let y = seat_coord.0 as i32;
+    let x = seat_coord.1 as i32;
+
+    let north = (y - 1, x);
+    let south = (y + 1, x);
+    let east = (y, x + 1);
+    let west = (y, x - 1);
+    let northeast = (y - 1, x + 1);
+    let northwest = (y - 1, x - 1);
+    let southeast = (y + 1, x + 1);
+    let southwest = (y + 1, x - 1);
+
+    for neighbor in &[
+        north, south, east, west, northeast, northwest, southeast, southwest,
+    ] {
+        if neighbor.0 >= 0
+            && neighbor.0 < seat_layout.len() as i32
+            && neighbor.1 >= 0
+            && neighbor.1 < seat_layout[0].len() as i32
+            && seat_layout[neighbor.0 as usize][neighbor.1 as usize] == '#'
+        {
+            occupied += 1;
+        }
+    }
+
+    occupied
+}
+
+fn waiting_area_game_of_life(seat_layout: &[Vec<char>]) -> Vec<Vec<char>> {
+    const EMPTY: char = 'L';
+    const OCCUPIED: char = '#';
+
+    let mut evolved = true;
+    let mut current_layout = Vec::new();
+    let mut next_layout = Vec::new();
+
+    // copy the layout into a mutable variable
+    for i in 0..seat_layout.len() {
+        current_layout.push(Vec::new());
+        for j in 0..seat_layout[i].len() {
+            current_layout[i].push(seat_layout[i][j]);
+        }
+    }
+
+    while evolved {
+        evolved = false;
+        for i in 0..current_layout.len() {
+            next_layout.push(Vec::new());
+            for j in 0..current_layout[i].len() {
+                // apply the rules of life
+                let occupied = count_adjacent_occupied_seats(&current_layout, (i, j));
+                if current_layout[i][j] == EMPTY && occupied == 0 {
+                    next_layout[i].push(OCCUPIED);
+                    evolved = true;
+                } else if current_layout[i][j] == OCCUPIED && occupied >= 4 {
+                    next_layout[i].push(EMPTY);
+                    evolved = true;
+                } else {
+                    next_layout[i].push(current_layout[i][j]);
+                }
+            }
+        }
+        current_layout = next_layout;
+        next_layout = Vec::new();
+    }
+    current_layout
 }
