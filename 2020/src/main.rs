@@ -44,6 +44,9 @@ fn main() {
 
     let (d11p1, d11p2) = run(&day11);
     println!("Day 11: p1 {} p2 {}", d11p1, d11p2);
+
+    let (d12p1, d12p2) = run(&day12);
+    println!("Day 12: p1 {} p2 {}", d12p1, d12p2);
 }
 
 fn run<F, T>(func: F) -> T
@@ -706,6 +709,7 @@ fn count_seats_by_occupied_status(seat_layout: &[Vec<char>]) -> (i64, i64) {
     (occupied, empty)
 }
 
+#[derive(Copy, Clone)]
 enum Direction {
     NORTH,
     SOUTH,
@@ -879,4 +883,158 @@ fn waiting_area_game_of_life(
         next_layout = Vec::new();
     }
     current_layout
+}
+
+fn day12() -> Result<(i64, i64), Box<dyn Error>> {
+    let actions = read_lines(12)?;
+
+    let mut current_status = ShipStatus {
+        x_total: 0,
+        y_total: 0,
+        currently_facing: Direction::EAST,
+    };
+
+    for action in actions {
+        current_status = move_ship(
+            to_ship_action(action.chars().nth(0).unwrap()),
+            action[1..].parse().unwrap(),
+            &current_status,
+        );
+    }
+
+    Ok((
+        manhattan_distance_travelled(&current_status) as i64,
+        NOT_IMPL,
+    ))
+}
+
+fn manhattan_distance_travelled(status: &ShipStatus) -> i32 {
+    status.x_total.abs() + status.y_total.abs()
+}
+
+fn to_ship_action(action: char) -> ShipAction {
+    match action {
+        'N' => ShipAction::N,
+        'S' => ShipAction::S,
+        'E' => ShipAction::E,
+        'W' => ShipAction::W,
+        'L' => ShipAction::L,
+        'R' => ShipAction::R,
+        'F' => ShipAction::F,
+        _ => ShipAction::F,
+    }
+}
+
+enum HandDirection {
+    LEFT,
+    RIGHT,
+}
+
+enum ShipAction {
+    N,
+    S,
+    E,
+    W,
+    L,
+    R,
+    F,
+}
+
+struct ShipStatus {
+    x_total: i32,
+    y_total: i32,
+    currently_facing: Direction,
+}
+
+fn move_ship(action: ShipAction, steps: i32, status: &ShipStatus) -> ShipStatus {
+    match action {
+        ShipAction::N => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total + steps,
+            currently_facing: status.currently_facing,
+        },
+        ShipAction::S => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total - steps,
+            currently_facing: status.currently_facing,
+        },
+        ShipAction::E => ShipStatus {
+            x_total: status.x_total + steps,
+            y_total: status.y_total,
+            currently_facing: status.currently_facing,
+        },
+        ShipAction::W => ShipStatus {
+            x_total: status.x_total - steps,
+            y_total: status.y_total,
+            currently_facing: status.currently_facing,
+        },
+        ShipAction::R => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total,
+            currently_facing: turn_ship(status.currently_facing, HandDirection::RIGHT, steps),
+        },
+        ShipAction::L => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total,
+            currently_facing: turn_ship(status.currently_facing, HandDirection::LEFT, steps),
+        },
+        ShipAction::F => {
+            let movement = match &status.currently_facing {
+                Direction::NORTH => (status.x_total, status.y_total + steps),
+                Direction::SOUTH => (status.x_total, status.y_total - steps),
+                Direction::EAST => (status.x_total + steps, status.y_total),
+                Direction::WEST => (status.x_total - steps, status.y_total),
+                _ => (status.x_total, status.y_total),
+            };
+            ShipStatus {
+                x_total: movement.0,
+                y_total: movement.1,
+                currently_facing: status.currently_facing,
+            }
+        }
+    }
+}
+
+fn normalize_turning_degrees(direction: HandDirection, degrees: i32) -> i32 {
+    match direction {
+        HandDirection::RIGHT => degrees,
+        HandDirection::LEFT => 360 - degrees,
+    }
+}
+
+fn turn_ship(
+    moving_direction: Direction,
+    turning_direction: HandDirection,
+    degrees: i32,
+) -> Direction {
+    if degrees >= 0 && degrees < 90 {
+        moving_direction
+    } else {
+        let degrees = normalize_turning_degrees(turning_direction, degrees);
+        if degrees >= 90 && degrees < 180 {
+            match moving_direction {
+                Direction::NORTH => Direction::EAST,
+                Direction::EAST => Direction::SOUTH,
+                Direction::SOUTH => Direction::WEST,
+                Direction::WEST => Direction::NORTH,
+                _ => moving_direction,
+            }
+        } else if degrees >= 180 && degrees < 270 {
+            match moving_direction {
+                Direction::NORTH => Direction::SOUTH,
+                Direction::EAST => Direction::WEST,
+                Direction::SOUTH => Direction::NORTH,
+                Direction::WEST => Direction::EAST,
+                _ => moving_direction,
+            }
+        } else {
+            match moving_direction {
+                Direction::NORTH => Direction::WEST,
+                Direction::EAST => Direction::NORTH,
+                Direction::SOUTH => Direction::EAST,
+                Direction::WEST => Direction::SOUTH,
+                _ => moving_direction,
+            }
+        }
+    }
 }
