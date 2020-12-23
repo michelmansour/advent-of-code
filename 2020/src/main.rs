@@ -709,7 +709,7 @@ fn count_seats_by_occupied_status(seat_layout: &[Vec<char>]) -> (i64, i64) {
     (occupied, empty)
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum Direction {
     NORTH,
     SOUTH,
@@ -888,23 +888,32 @@ fn waiting_area_game_of_life(
 fn day12() -> Result<(i64, i64), Box<dyn Error>> {
     let actions = read_lines(12)?;
 
-    let mut current_status = ShipStatus {
+    let mut current_ship_status = ShipStatus {
         x_total: 0,
         y_total: 0,
         currently_facing: Direction::EAST,
+        waypoint_x: 10,
+        waypoint_y: 1,
     };
 
-    for action in actions {
-        current_status = move_ship(
-            to_ship_action(action.chars().nth(0).unwrap()),
-            action[1..].parse().unwrap(),
-            &current_status,
-        );
+    let mut current_waypoint_status = ShipStatus {
+        x_total: 0,
+        y_total: 0,
+        currently_facing: Direction::EAST,
+        waypoint_x: 10,
+        waypoint_y: 1,
+    };
+
+    for a in actions {
+        let action = to_ship_action(a.chars().nth(0).unwrap());
+        let steps = a[1..].parse().unwrap();
+        current_ship_status = move_ship(&action, steps, &current_ship_status);
+        current_waypoint_status = move_waypoint(&action, steps, &current_waypoint_status);
     }
 
     Ok((
-        manhattan_distance_travelled(&current_status) as i64,
-        NOT_IMPL,
+        manhattan_distance_travelled(&current_ship_status) as i64,
+        manhattan_distance_travelled(&current_waypoint_status) as i64,
     ))
 }
 
@@ -940,43 +949,58 @@ enum ShipAction {
     F,
 }
 
+#[derive(Debug)]
 struct ShipStatus {
     x_total: i32,
     y_total: i32,
     currently_facing: Direction,
+    waypoint_x: i32,
+    waypoint_y: i32,
 }
 
-fn move_ship(action: ShipAction, steps: i32, status: &ShipStatus) -> ShipStatus {
+fn move_ship(action: &ShipAction, steps: i32, status: &ShipStatus) -> ShipStatus {
     match action {
         ShipAction::N => ShipStatus {
             x_total: status.x_total,
             y_total: status.y_total + steps,
             currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y,
         },
         ShipAction::S => ShipStatus {
             x_total: status.x_total,
             y_total: status.y_total - steps,
             currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y,
         },
         ShipAction::E => ShipStatus {
             x_total: status.x_total + steps,
             y_total: status.y_total,
             currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y,
         },
         ShipAction::W => ShipStatus {
             x_total: status.x_total - steps,
             y_total: status.y_total,
             currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y,
         },
         ShipAction::R => ShipStatus {
             x_total: status.x_total,
             y_total: status.y_total,
             currently_facing: turn_ship(status.currently_facing, HandDirection::RIGHT, steps),
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y,
         },
         ShipAction::L => ShipStatus {
             x_total: status.x_total,
             y_total: status.y_total,
             currently_facing: turn_ship(status.currently_facing, HandDirection::LEFT, steps),
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y,
         },
         ShipAction::F => {
             let movement = match &status.currently_facing {
@@ -990,6 +1014,8 @@ fn move_ship(action: ShipAction, steps: i32, status: &ShipStatus) -> ShipStatus 
                 x_total: movement.0,
                 y_total: movement.1,
                 currently_facing: status.currently_facing,
+                waypoint_x: status.waypoint_x,
+                waypoint_y: status.waypoint_y,
             }
         }
     }
@@ -1037,4 +1063,86 @@ fn turn_ship(
             }
         }
     }
+}
+
+fn move_waypoint(action: &ShipAction, steps: i32, status: &ShipStatus) -> ShipStatus {
+    match action {
+        ShipAction::N => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total,
+            currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y + steps,
+        },
+        ShipAction::S => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total,
+            currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y - steps,
+        },
+        ShipAction::E => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total,
+            currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x + steps,
+            waypoint_y: status.waypoint_y,
+        },
+        ShipAction::W => ShipStatus {
+            x_total: status.x_total,
+            y_total: status.y_total,
+            currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x - steps,
+            waypoint_y: status.waypoint_y,
+        },
+        ShipAction::R => {
+            let wp = rotate_waypoint(
+                HandDirection::RIGHT,
+                steps,
+                (status.waypoint_x, status.waypoint_y),
+            );
+            ShipStatus {
+                x_total: status.x_total,
+                y_total: status.y_total,
+                currently_facing: status.currently_facing,
+                waypoint_x: wp.0,
+                waypoint_y: wp.1,
+            }
+        }
+        ShipAction::L => {
+            let wp = rotate_waypoint(
+                HandDirection::LEFT,
+                steps,
+                (status.waypoint_x, status.waypoint_y),
+            );
+            ShipStatus {
+                x_total: status.x_total,
+                y_total: status.y_total,
+                currently_facing: status.currently_facing,
+                waypoint_x: wp.0,
+                waypoint_y: wp.1,
+            }
+        }
+        ShipAction::F => ShipStatus {
+            x_total: status.x_total + steps * status.waypoint_x,
+            y_total: status.y_total + steps * status.waypoint_y,
+            currently_facing: status.currently_facing,
+            waypoint_x: status.waypoint_x,
+            waypoint_y: status.waypoint_y,
+        },
+    }
+}
+
+fn rotate_waypoint(direction: HandDirection, degrees: i32, waypoint: (i32, i32)) -> (i32, i32) {
+    let mut deg = normalize_turning_degrees(direction, degrees);
+    let mut wx = waypoint.0;
+    let mut wy = waypoint.1;
+
+    while deg > 0 {
+        deg -= 90;
+        let t = wx;
+        wx = wy;
+        wy = -t;
+    }
+    (wx, wy)
 }

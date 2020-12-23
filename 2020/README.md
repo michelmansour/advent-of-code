@@ -52,3 +52,4 @@ Read more about ownership, references, type inference, and slices to idiomaticiz
 
 ## Day 12
 * Part 1: Nothing new.
+* Part 2: Learned how to display a struct.
