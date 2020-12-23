@@ -48,3 +48,4 @@ Read more about ownership, references, type inference, and slices to idiomaticiz
 
 ## Day 11
 * Part 1: Learned to be ok with skipping parts I don't feel like doing. And how to do GoL in Rust.
+* Part 2: Learned about enum and struct.

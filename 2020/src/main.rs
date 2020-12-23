@@ -80,6 +80,16 @@ fn read_grid(day: i32) -> Result<Vec<Vec<char>>, Box<dyn Error>> {
     Ok(grid)
 }
 
+fn print_grid(grid: &[Vec<char>]) -> () {
+    for line in grid {
+        let mut row_str = String::new();
+        for c in line {
+            row_str.push(*c);
+        }
+        println!("{}", row_str);
+    }
+}
+
 fn read_entries(day: i32, separator: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
     let f = File::open(format!("./input/day{}.txt", day))?;
     let lines = BufReader::new(f).lines();
@@ -672,9 +682,11 @@ fn make_full_joltage_chain(joltages: &[i32]) -> Vec<i32> {
 fn day11() -> Result<(i64, i64), Box<dyn Error>> {
     let initial_layout = read_grid(11)?;
 
-    let final_layout = waiting_area_game_of_life(&initial_layout);
-    let seat_statuses = count_seats_by_occupied_status(&final_layout);
-    Ok((seat_statuses.0, NOT_IMPL))
+    let final_layout = waiting_area_game_of_life(&initial_layout, VisibilityType::ADJACENT);
+    let seat_statuses_adj = count_seats_by_occupied_status(&final_layout);
+    let final_layout = waiting_area_game_of_life(&initial_layout, VisibilityType::NEAREST);
+    let seat_statuses_near = count_seats_by_occupied_status(&final_layout);
+    Ok((seat_statuses_adj.0, seat_statuses_near.0))
 }
 
 fn count_seats_by_occupied_status(seat_layout: &[Vec<char>]) -> (i64, i64) {
@@ -694,23 +706,49 @@ fn count_seats_by_occupied_status(seat_layout: &[Vec<char>]) -> (i64, i64) {
     (occupied, empty)
 }
 
-fn count_adjacent_occupied_seats(seat_layout: &[Vec<char>], seat_coord: (usize, usize)) -> usize {
+enum Direction {
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST,
+    NORTHEAST,
+    NORTHWEST,
+    SOUTHEAST,
+    SOUTHWEST,
+}
+
+impl Direction {
+    fn move_yx(&self) -> (i32, i32) {
+        match *self {
+            Direction::NORTH => (-1, 0),
+            Direction::SOUTH => (1, 0),
+            Direction::EAST => (0, 1),
+            Direction::WEST => (0, -1),
+            Direction::NORTHEAST => (-1, 1),
+            Direction::NORTHWEST => (-1, -1),
+            Direction::SOUTHEAST => (1, 1),
+            Direction::SOUTHWEST => (1, -1),
+        }
+    }
+}
+
+fn count_adjacent_occupied_seats(seat_layout: &[Vec<char>], seat_coord: (usize, usize)) -> i32 {
     let mut occupied = 0;
     let y = seat_coord.0 as i32;
     let x = seat_coord.1 as i32;
 
-    let north = (y - 1, x);
-    let south = (y + 1, x);
-    let east = (y, x + 1);
-    let west = (y, x - 1);
-    let northeast = (y - 1, x + 1);
-    let northwest = (y - 1, x - 1);
-    let southeast = (y + 1, x + 1);
-    let southwest = (y + 1, x - 1);
-
     for neighbor in &[
-        north, south, east, west, northeast, northwest, southeast, southwest,
+        Direction::NORTH,
+        Direction::SOUTH,
+        Direction::EAST,
+        Direction::WEST,
+        Direction::NORTHEAST,
+        Direction::NORTHWEST,
+        Direction::SOUTHEAST,
+        Direction::SOUTHWEST,
     ] {
+        let delta = neighbor.move_yx();
+        let neighbor = (y + delta.0, x + delta.1);
         if neighbor.0 >= 0
             && neighbor.0 < seat_layout.len() as i32
             && neighbor.1 >= 0
@@ -724,9 +762,87 @@ fn count_adjacent_occupied_seats(seat_layout: &[Vec<char>], seat_coord: (usize, 
     occupied
 }
 
-fn waiting_area_game_of_life(seat_layout: &[Vec<char>]) -> Vec<Vec<char>> {
+fn count_nearest_occupied_seats(seat_layout: &[Vec<char>], seat_coord: (usize, usize)) -> i32 {
+    let mut occupied = 0;
+
+    for neighbor in &[
+        Direction::NORTH,
+        Direction::SOUTH,
+        Direction::EAST,
+        Direction::WEST,
+        Direction::NORTHEAST,
+        Direction::NORTHWEST,
+        Direction::SOUTHEAST,
+        Direction::SOUTHWEST,
+    ] {
+        if is_nearest_seat_occupied(seat_layout, seat_coord, neighbor) {
+            occupied += 1;
+        }
+    }
+
+    occupied
+}
+
+fn is_nearest_seat_occupied(
+    seat_layout: &[Vec<char>],
+    seat: (usize, usize),
+    direction: &Direction,
+) -> bool {
+    const FLOOR: char = '.';
+
+    let delta = direction.move_yx();
+    let mut current_seat: (i32, i32) = (seat.0 as i32, seat.1 as i32);
+    let mut is_seat = false;
+
+    while !is_seat
+        && current_seat.0 + delta.0 >= 0
+        && current_seat.0 + delta.0 < seat_layout.len() as i32
+        && current_seat.1 + delta.1 >= 0
+        && current_seat.1 + delta.1 < seat_layout[0].len() as i32
+    {
+        current_seat = (current_seat.0 + delta.0, current_seat.1 + delta.1);
+        is_seat = seat_layout[current_seat.0 as usize][current_seat.1 as usize] != FLOOR;
+    }
+    is_seat && seat_layout[current_seat.0 as usize][current_seat.1 as usize] == '#'
+}
+
+struct SeatOccupationRuleset {
+    empty_to_occupied: i32,
+    occupied_to_empty: i32,
+    occupied_seat_counter: fn(&[Vec<char>], (usize, usize)) -> i32,
+}
+
+#[derive(PartialEq)]
+enum VisibilityType {
+    ADJACENT,
+    NEAREST,
+}
+
+impl VisibilityType {
+    fn ruleset(&self) -> SeatOccupationRuleset {
+        match &self {
+            VisibilityType::ADJACENT => SeatOccupationRuleset {
+                empty_to_occupied: 0,
+                occupied_to_empty: 4,
+                occupied_seat_counter: count_adjacent_occupied_seats,
+            },
+            VisibilityType::NEAREST => SeatOccupationRuleset {
+                empty_to_occupied: 0,
+                occupied_to_empty: 5,
+                occupied_seat_counter: count_nearest_occupied_seats,
+            },
+        }
+    }
+}
+
+fn waiting_area_game_of_life(
+    seat_layout: &[Vec<char>],
+    rule_type: VisibilityType,
+) -> Vec<Vec<char>> {
     const EMPTY: char = 'L';
     const OCCUPIED: char = '#';
+
+    let ruleset = rule_type.ruleset();
 
     let mut evolved = true;
     let mut current_layout = Vec::new();
@@ -746,11 +862,12 @@ fn waiting_area_game_of_life(seat_layout: &[Vec<char>]) -> Vec<Vec<char>> {
             next_layout.push(Vec::new());
             for j in 0..current_layout[i].len() {
                 // apply the rules of life
-                let occupied = count_adjacent_occupied_seats(&current_layout, (i, j));
-                if current_layout[i][j] == EMPTY && occupied == 0 {
+                let occupied = (ruleset.occupied_seat_counter)(&current_layout, (i, j));
+                if current_layout[i][j] == EMPTY && occupied == ruleset.empty_to_occupied {
                     next_layout[i].push(OCCUPIED);
                     evolved = true;
-                } else if current_layout[i][j] == OCCUPIED && occupied >= 4 {
+                } else if current_layout[i][j] == OCCUPIED && occupied >= ruleset.occupied_to_empty
+                {
                     next_layout[i].push(EMPTY);
                     evolved = true;
                 } else {
